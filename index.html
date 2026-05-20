@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acrobat Freemium — Funnel Analysis</title>
+<style>
+  :root{
+    --bg:#111111;
+    --surface:#1E1E1E;
+    --border:#333333;
+    --red:#E1251B;
+    --green:#1A7A3A;
+    --amber:#D97706;
+    --text:#FFFFFF;
+    --text2:#999999;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body{padding:20px;min-width:900px;}
+  .wrap{max-width:1280px;margin:0 auto;}
+
+  /* Tabs */
+  .tabs{display:flex;gap:10px;margin-bottom:20px;}
+  .tab-btn{padding:11px 26px;border-radius:999px;border:1px solid var(--border);
+    background:var(--surface);color:var(--text2);font-size:14px;font-weight:600;
+    cursor:pointer;transition:all .18s ease;letter-spacing:.3px;}
+  .tab-btn:hover{border-color:#555;color:#ccc;}
+  .tab-btn.active{background:var(--red);border-color:var(--red);color:#fff;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  /* Decision banner */
+  .banner{background:var(--surface);border:1px solid var(--border);border-radius:14px;
+    padding:22px 26px;display:flex;justify-content:space-between;align-items:center;gap:30px;}
+  .banner-left{flex:0 0 auto;}
+  .banner-label{font-size:12px;letter-spacing:1.6px;color:var(--text2);font-weight:700;}
+  .banner-arr{font-size:58px;font-weight:800;line-height:1;margin:6px 0 8px;letter-spacing:-1px;}
+  .banner-sub{font-size:13px;color:var(--text2);}
+  .banner-sub b{color:var(--text);}
+  .banner-right{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
+  .pill{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 18px;min-width:130px;}
+  .pill .k{font-size:11px;color:var(--text2);letter-spacing:.6px;text-transform:uppercase;}
+  .pill .v{font-size:20px;font-weight:700;margin-top:4px;}
+  .verdict{border-radius:10px;padding:14px 22px;font-size:15px;font-weight:800;
+    letter-spacing:.5px;text-align:center;min-width:200px;transition:background .25s;}
+  .v-green{background:var(--green);color:#fff;}
+  .v-amber{background:var(--amber);color:#fff;}
+  .v-red{background:var(--red);color:#fff;}
+
+  .progress-track{height:8px;background:var(--bg);border:1px solid var(--border);
+    border-radius:999px;margin-top:14px;overflow:hidden;}
+  .progress-fill{height:100%;border-radius:999px;transition:width .35s ease,background .25s;}
+  .progress-cap{font-size:11px;color:var(--text2);margin-top:6px;}
+
+  /* Funnels */
+  .funnel-section{margin-top:22px;background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;padding:24px;}
+  .funnel-grid{display:grid;grid-template-columns:1fr 120px 1fr;align-items:start;gap:0;}
+  .funnel-col{display:flex;flex-direction:column;align-items:center;}
+  .funnel-title{font-size:13px;font-weight:800;letter-spacing:1.2px;margin-bottom:14px;}
+  .funnel-title.before{color:var(--text2);}
+  .funnel-title.after{color:var(--red);}
+  .funnel-svg{width:100%;max-width:420px;}
+  .stage-name{font-size:11px;fill:#ddd;font-weight:500;}
+  .stage-count{font-size:21px;font-weight:800;fill:#fff;}
+  .funnel-svg text{paint-order:stroke;stroke:rgba(0,0,0,.45);stroke-width:.6px;}
+  .drop-pill-text{font-size:10px;font-weight:700;fill:#fff;}
+
+  .vs-col{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+    padding-top:34px;height:100%;}
+  .vs-badge{font-size:13px;font-weight:800;color:var(--text2);letter-spacing:1px;
+    border:1px solid var(--border);border-radius:999px;padding:6px 12px;margin-bottom:10px;}
+  .vs-line{width:1px;background:var(--border);flex:1;min-height:120px;}
+  .delta-list{display:flex;flex-direction:column;align-items:center;gap:0;width:100%;}
+  .delta{border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;text-align:center;
+    line-height:1.35;width:104px;}
+  .delta.up{background:rgba(26,122,58,.18);border:1px solid var(--green);color:#5fd083;}
+  .delta.down{background:rgba(225,37,27,.18);border:1px solid var(--red);color:#f08278;}
+  .delta .abs{display:block;font-size:10px;color:var(--text2);font-weight:600;margin-top:2px;}
+
+  .funnel-summary{margin-top:16px;background:var(--bg);border:1px solid var(--border);
+    border-radius:10px;padding:12px 16px;font-size:13px;text-align:center;width:100%;max-width:420px;}
+  .funnel-summary b{color:#fff;font-weight:700;}
+  .summary-before b{color:#bbb;}
+  .summary-after b{color:#5fd083;}
+
+  .warn{margin-top:16px;background:rgba(225,37,27,.12);border:1px solid var(--red);
+    color:#f08278;border-radius:10px;padding:12px 16px;font-size:13px;font-weight:600;
+    text-align:center;display:none;}
+  .warn.show{display:block;}
+
+  /* Sliders */
+  .sliders-section{margin-top:22px;background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;padding:24px;}
+  .sliders-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+  .sliders-head h2{font-size:14px;font-weight:800;letter-spacing:1.4px;color:#fff;}
+  .reset-btn{background:transparent;border:1px solid var(--red);color:#fff;border-radius:8px;
+    padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+  .reset-btn:hover{background:var(--red);color:#fff;}
+  .reset-btn.flash{background:var(--green);border-color:var(--green);}
+  .sliders-cols{display:grid;grid-template-columns:1fr 1px 1fr;gap:30px;}
+  .col-divider{background:var(--border);}
+  .col-title{font-size:12px;font-weight:800;letter-spacing:1px;color:var(--red);margin-bottom:16px;}
+  .col-title.cost{color:var(--amber);}
+  .slider-row{margin-bottom:20px;}
+  .slider-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;}
+  .slider-label{font-size:13px;font-weight:600;color:#eee;}
+  .slider-val{font-size:14px;font-weight:800;color:var(--red);font-variant-numeric:tabular-nums;}
+  .slider-val.cost{color:var(--amber);}
+  .slider-help{font-size:11px;color:var(--text2);margin-top:5px;}
+
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;
+    background:var(--bg);border:1px solid var(--border);border-radius:999px;outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:18px;height:18px;border-radius:50%;background:var(--red);border:2px solid #fff;
+    cursor:pointer;box-shadow:0 0 0 1px var(--red);}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+    background:var(--red);border:2px solid #fff;cursor:pointer;}
+  input[type=range].cost::-webkit-slider-thumb{background:var(--amber);box-shadow:0 0 0 1px var(--amber);}
+  input[type=range].cost::-moz-range-thumb{background:var(--amber);}
+
+  /* Calc readout */
+  .calc-readout{margin-top:22px;background:var(--surface);border:1px solid var(--border);
+    border-radius:14px;padding:20px 24px;}
+  .calc-readout h2{font-size:13px;font-weight:800;letter-spacing:1.2px;margin-bottom:14px;color:var(--text2);}
+  .calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .calc-item{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+  .calc-item .k{font-size:11px;color:var(--text2);}
+  .calc-item .v{font-size:18px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;}
+  .calc-item.neg .v{color:#f08278;}
+
+  /* Tab 2 */
+  .t2-section{margin-bottom:30px;}
+  .t2-h{font-size:16px;font-weight:800;letter-spacing:.6px;margin-bottom:14px;color:#fff;}
+  table{width:100%;border-collapse:collapse;background:var(--surface);
+    border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  th{background:#000;color:var(--text2);font-size:11px;letter-spacing:.8px;text-transform:uppercase;
+    text-align:left;padding:12px 14px;font-weight:700;border-bottom:1px solid var(--border);}
+  td{padding:14px;font-size:13px;vertical-align:top;border-bottom:1px solid var(--border);color:#ddd;line-height:1.5;}
+  tr:nth-child(even) td{background:rgba(255,255,255,.02);}
+  tr:last-child td{border-bottom:none;}
+  td.our-val{font-weight:700;color:#fff;width:170px;}
+  td.assumption{font-weight:700;color:#fff;width:170px;}
+  td.bench{font-size:12px;font-style:italic;color:#aaa;}
+  .conf{display:inline-block;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:800;
+    letter-spacing:.4px;white-space:nowrap;}
+  .conf.high{background:rgba(26,122,58,.2);color:#5fd083;border:1px solid var(--green);}
+  .conf.med{background:rgba(217,119,6,.2);color:#f0a955;border:1px solid var(--amber);}
+  .conf.medhigh{background:rgba(26,122,58,.16);color:#7dd69b;border:1px solid var(--green);}
+  .conf.low{background:rgba(225,37,27,.2);color:#f08278;border:1px solid var(--red);}
+
+  /* cards */
+  .card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .bcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;}
+  .bcard h3{font-size:13px;font-weight:800;color:var(--red);letter-spacing:.5px;margin-bottom:14px;
+    border-bottom:1px solid var(--border);padding-bottom:10px;}
+  .bcard ul{list-style:none;}
+  .bcard li{font-size:12.5px;color:#ccc;padding:7px 0;line-height:1.45;border-bottom:1px solid rgba(255,255,255,.04);}
+  .bcard li:last-child{border-bottom:none;}
+  .bcard li b{color:#fff;}
+  .bcard li.target b{color:#5fd083;}
+  .bcard .insight{margin-top:12px;font-size:12px;font-style:italic;color:var(--amber);
+    background:rgba(217,119,6,.08);border-radius:8px;padding:10px;line-height:1.45;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="funnel">Funnel Analysis</button>
+    <button class="tab-btn" data-tab="bench">Assumptions &amp; Benchmarks</button>
+  </div>
+
+  <!-- ============ TAB 1 ============ -->
+  <div class="tab-panel active" id="tab-funnel">
+
+    <div class="banner">
+      <div class="banner-left">
+        <div class="banner-label">NET NEW ARR OUTCOME</div>
+        <div class="banner-arr" id="arr-big">$610M</div>
+        <div class="banner-sub">Doc Cloud ARR: <b>$3.9B</b> &rarr; <b id="dc-after">$4.51B</b></div>
+      </div>
+      <div class="banner-right">
+        <div class="pill">
+          <div class="k">Gross ARR</div>
+          <div class="v" id="gross-arr">$780M</div>
+        </div>
+        <div class="pill">
+          <div class="k">Conversion</div>
+          <div class="v" id="conv-pill">2.50% &rarr; 3.00%</div>
+        </div>
+        <div class="verdict v-green" id="verdict">STRONGLY POSITIVE</div>
+      </div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="margin-bar"></div></div>
+    <div class="progress-cap" id="margin-cap">Net ARR is 78% of gross ARR</div>
+
+    <div class="funnel-section">
+      <div class="funnel-grid">
+        <div class="funnel-col">
+          <div class="funnel-title before">CURRENT STATE</div>
+          <svg class="funnel-svg" id="svg-before" viewBox="0 0 420 440" preserveAspectRatio="xMidYMin meet"></svg>
+          <div class="funnel-summary summary-before" id="sum-before"></div>
+        </div>
+
+        <div class="vs-col">
+          <div class="vs-badge">VS</div>
+          <div class="delta-list" id="delta-list"></div>
+        </div>
+
+        <div class="funnel-col">
+          <div class="funnel-title after">POST-FREEMIUM</div>
+          <svg class="funnel-svg" id="svg-after" viewBox="0 0 420 440" preserveAspectRatio="xMidYMin meet"></svg>
+          <div class="funnel-summary summary-after" id="sum-after"></div>
+        </div>
+      </div>
+      <div class="warn" id="warn">After-state worse than current — adjust sliders.</div>
+    </div>
+
+    <div class="sliders-section">
+      <div class="sliders-head">
+        <h2>TUNE THE ASSUMPTIONS</h2>
+        <button class="reset-btn" id="reset-btn">&#8634; Reset to Deck Defaults</button>
+      </div>
+      <div class="sliders-cols">
+        <div class="col-left">
+          <div class="col-title">FUNNEL CONVERSION LEVERS</div>
+          <div class="slider-row">
+            <div class="slider-top"><span class="slider-label">Free sign-up rate (post-freemium)</span><span class="slider-val" id="v-signup">30%</span></div>
+            <input type="range" id="s-signup" min="15" max="45" step="1" value="30">
+            <div class="slider-help">Current state locked at 20%</div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-top"><span class="slider-label">Habit formation rate (post-freemium)</span><span class="slider-val" id="v-habit">33%</span></div>
+            <input type="range" id="s-habit" min="15" max="55" step="1" value="33">
+            <div class="slider-help">Current state locked at 20% of signed-in</div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-top"><span class="slider-label">Action layer reach (post-freemium)</span><span class="slider-val" id="v-action">50%</span></div>
+            <input type="range" id="s-action" min="20" max="70" step="1" value="50">
+            <div class="slider-help">Current state locked at 72% of habit-formed</div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-top"><span class="slider-label">Close rate at action layer paywall</span><span class="slider-val" id="v-close">60%</span></div>
+            <input type="range" id="s-close" min="25" max="85" step="1" value="60">
+            <div class="slider-help">Current state locked at 87% (high-intent small pool)</div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-top"><span class="slider-label">Blended ARPU ($/year)</span><span class="slider-val" id="v-arpu">$195</span></div>
+            <input type="range" id="s-arpu" min="130" max="240" step="5" value="195">
+            <div class="slider-help">$3.9B Doc Cloud ARR &divide; 20M paid users</div>
+          </div>
+        </div>
+
+        <div class="col-divider"></div>
+
+        <div class="col-right">
+          <div class="col-title cost">COST DEDUCTIONS</div>
+          <div class="slider-row">
+            <div class="slider-top"><span class="slider-label">AI add-on cannibalization ($M)</span><span class="slider-val cost" id="v-cannib">$14M</span></div>
+            <input type="range" class="cost" id="s-cannib" min="0" max="100" step="1" value="14">
+            <div class="slider-help">~150K users &times; $9.99/mo cancelling AI add-on</div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-top"><span class="slider-label">AI inference COGS ($M/yr)</span><span class="slider-val cost" id="v-cogs">$55M</span></div>
+            <input type="range" class="cost" id="s-cogs" min="10" max="100" step="1" value="55">
+            <div class="slider-help">~18B Q&amp;A requests/yr &middot; Haiku cached at $0.002/req avg</div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-top"><span class="slider-label">Incremental support cost ($M)</span><span class="slider-val cost" id="v-support">$8M</span></div>
+            <input type="range" class="cost" id="s-support" min="0" max="30" step="1" value="8">
+            <div class="slider-help">Free-tier support volume increase</div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-top"><span class="slider-label">Starter tier dilution ($M)</span><span class="slider-val cost" id="v-dilution">$38M</span></div>
+            <input type="range" class="cost" id="s-dilution" min="0" max="80" step="1" value="38">
+            <div class="slider-help">Paid users downgrading to free Starter</div>
+          </div>
+          <div class="slider-row">
+            <div class="slider-top"><span class="slider-label">Paid churn acceleration ($M)</span><span class="slider-val cost" id="v-churn">$55M</span></div>
+            <input type="range" class="cost" id="s-churn" min="0" max="120" step="1" value="55">
+            <div class="slider-help">Existing paid cohort at risk from repositioning</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="calc-readout">
+      <h2>INTERMEDIATE CALCULATIONS</h2>
+      <div class="calc-grid" id="calc-grid"></div>
+    </div>
+
+  </div>
+
+  <!-- ============ TAB 2 ============ -->
+  <div class="tab-panel" id="tab-bench">
+
+    <div class="t2-section">
+      <div class="t2-h">Assumption Rationale</div>
+      <table>
+        <thead>
+          <tr><th>Assumption</th><th>Our Value</th><th>Why We Believe This</th><th>Confidence</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="assumption">Free sign-up rate lift (20% &rarr; 30%)</td>
+            <td class="our-val">+10pp lift with freemium</td>
+            <td>Many people hit the paywall mid-task and leave before signing up. Remove the wall and more stick around to make an account.</td>
+            <td><span class="conf med">MEDIUM</span></td>
+          </tr>
+          <tr>
+            <td class="assumption">Habit formation lift (20% &rarr; 33% of signed-in)</td>
+            <td class="our-val">2.5&times; more users hit 3+ interactions / 14 days</td>
+            <td>The 5-use AI cap and the paywall cut people off before a habit can form. Open the read layer and that ceiling disappears.</td>
+            <td><span class="conf medhigh">MEDIUM-HIGH</span></td>
+          </tr>
+          <tr>
+            <td class="assumption">Action-layer reach (72% &rarr; 50% of habit-formed)</td>
+            <td class="our-val">Reach drops as funnel widens with lower-intent users</td>
+            <td>Kept cautious on purpose. A bigger funnel pulls in more casual users, so fewer of them need to sign or certify in any given stretch.</td>
+            <td><span class="conf low">LOW</span></td>
+          </tr>
+          <tr>
+            <td class="assumption">Close rate at paywall (87% &rarr; 60%)</td>
+            <td class="our-val">Lower close on a larger, less self-selected pool</td>
+            <td>Today's 87% is a tiny group that already wants to pay. A bigger crowd closes lower, but hits the wall when it matters — their first signature or certified file.</td>
+            <td><span class="conf med">MEDIUM</span></td>
+          </tr>
+          <tr>
+            <td class="assumption">Blended ARPU ($195/yr)</td>
+            <td class="our-val">$3.9B Doc Cloud ARR &divide; 20M paid users</td>
+            <td>Just the deck's ARR over its subscriber count. New sign-ups may lean cheaper, but the target user lands on Standard or Pro, not the bottom rung.</td>
+            <td><span class="conf med">MEDIUM</span></td>
+          </tr>
+          <tr>
+            <td class="assumption">Cannibalization ($14M)</td>
+            <td class="our-val">~150K users &times; $9.99/mo cancel the AI add-on</td>
+            <td>The add-on is small revenue, and most who pay for it stay subscribed for editing and signatures. Base case is a 1&times; hit, stress-tested to 5&times;.</td>
+            <td><span class="conf med">MEDIUM</span></td>
+          </tr>
+          <tr>
+            <td class="assumption">AI inference COGS ($55M/yr)</td>
+            <td class="our-val">~18B Q&amp;A requests &times; ~$0.003/req</td>
+            <td>~600M eligible users, a third using Q&amp;A, ~7 questions a month — about 18B requests a year on a cheap cached model. A circuit breaker pulls it back past 3% of segment ARR.</td>
+            <td><span class="conf medhigh">MEDIUM-HIGH</span></td>
+          </tr>
+          <tr>
+            <td class="assumption">50 bps conversion lift (overall)</td>
+            <td class="our-val">2.5% &rarr; 3.0% blended = +50 bps</td>
+            <td>The gain comes entirely from habit-formed users roughly tripling (32M to 80M). Close rate drops — we're just getting more people to a paywall worth hitting.</td>
+            <td><span class="conf med">MEDIUM</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<script>
+//=================== Constants ===================
+const MAU = 800_000_000;
+const BEFORE = {
+  signup:0.20, habit:0.20, action:0.72, close:0.87
+};
+const DEFAULTS = {
+  signup:30, habit:33, action:50, close:60, arpu:195,
+  cannib:14, cogs:55, support:8, dilution:38, churn:55
+};
+
+// before chain (locked)
+const before = {};
+before.mau = MAU;
+before.signedin = before.mau * BEFORE.signup;     // 160M
+before.habit    = before.signedin * BEFORE.habit; // 32M
+before.action   = before.habit * BEFORE.action;   // 23.04M
+before.paid     = before.action * BEFORE.close;   // 20.04M
+before.conv     = before.paid / before.mau;       // 2.50%
+
+//=================== Helpers ===================
+const $ = id => document.getElementById(id);
+function fmtM(n){ // number -> "XXXm"-ish, value already a count
+  const m = n/1e6;
+  if (m >= 100) return Math.round(m)+'M';
+  if (m >= 10)  return (Math.round(m*10)/10)+'M';
+  return (Math.round(m*100)/100)+'M';
+}
+function fmtCount(n){ return fmtM(n); }
+function pct(x,d=2){ return (x*100).toFixed(d)+'%'; }
+function dollarsM(x){ // x in $M
+  if (Math.abs(x) >= 1000) return '$'+(x/1000).toFixed(2)+'B';
+  return '$'+Math.round(x)+'M';
+}
+
+const sliderIds = ['signup','habit','action','close','arpu','cannib','cogs','support','dilution','churn'];
+
+function readSliders(){
+  return {
+    signup: +$('s-signup').value,
+    habit:  +$('s-habit').value,
+    action: +$('s-action').value,
+    close:  +$('s-close').value,
+    arpu:   +$('s-arpu').value,
+    cannib: +$('s-cannib').value,
+    cogs:   +$('s-cogs').value,
+    support:+$('s-support').value,
+    dilution:+$('s-dilution').value,
+    churn:  +$('s-churn').value
+  };
+}
+
+//=================== Animated big number ===================
+let arrAnim = {cur:0, target:0, raf:null};
+function animateARR(to){
+  arrAnim.target = to;
+  if (arrAnim.raf) cancelAnimationFrame(arrAnim.raf);
+  const step = () => {
+    const diff = arrAnim.target - arrAnim.cur;
+    if (Math.abs(diff) < 0.5){ arrAnim.cur = arrAnim.target; }
+    else { arrAnim.cur += diff * 0.18; }
+    $('arr-big').textContent = dollarsM(arrAnim.cur);
+    if (arrAnim.cur !== arrAnim.target){ arrAnim.raf = requestAnimationFrame(step); }
+  };
+  step();
+}
+
+//=================== Funnel drawing ===================
+// 5 stages, trapezoids stacked. Width proportional to count / MAU.
+const STAGE_NAMES = [
+  'Total MAU',
+  'Signed-in free users',
+  'Habit-formed (3+ / 14d)',
+  'Reach action layer',
+  'Convert to paid'
+];
+
+const SVG_W = 420, SVG_H = 440;
+const BAND_H = 80, GAP = 8, TOP = 6;
+const MAX_W = 380, MIN_W = 60;
+const CX = SVG_W/2;
+
+function widthFor(count){
+  // proportional to count/MAU but clamp min so small stages stay visible
+  const frac = count / MAU;
+  return Math.max(MIN_W, MAX_W * frac);
+}
+
+function colorBefore(i){
+  if (i<=1) return '#5A5852';
+  if (i===2) return '#6E6A63';
+  return '#4A4742';
+}
+function colorAfter(i){
+  if (i<=1) return '#2A2A2A';
+  if (i===2) return '#E1251B';
+  if (i===4) return '#1A7A3A';
+  return '#1A7A3A';
+}
+function textColorFor(side,i){
+  return '#fff';
+}
+function dropPillColor(side,i){
+  if (i===0) return null; // no drop on first stage
+  if (side==='before') return '#2A2824';
+  if (i===2) return '#B81E16';
+  if (i>=3) return '#0f5e2c';
+  return '#444';
+}
+
+function drawFunnel(svgEl, counts, rates, side){
+  // counts: array of 5; rates: array of 5 (rate from previous, rate[0] unused)
+  const widths = counts.map(widthFor);
+  let svg = '';
+  for (let i=0;i<5;i++){
+    const yTop = TOP + i*(BAND_H+GAP);
+    const yBot = yTop + BAND_H;
+    const wTop = widths[i];
+    // next width: for trapezoid taper use next stage width (or shrink slightly on last)
+    const wBot = (i<4) ? widths[i+1] : Math.max(MIN_W*0.7, widths[i]*0.82);
+    const xTL = CX - wTop/2, xTR = CX + wTop/2;
+    const xBL = CX - wBot/2, xBR = CX + wBot/2;
+    const fill = (side==='before') ? colorBefore(i) : colorAfter(i);
+    const txtCol = textColorFor(side,i);
+
+    svg += `<polygon points="${xTL},${yTop} ${xTR},${yTop} ${xBR},${yBot} ${xBL},${yBot}"
+              fill="${fill}" stroke="#000" stroke-width="1"
+              style="transition:all .3s ease"><title>${STAGE_NAMES[i]}: ${fmtCount(counts[i])}</title></polygon>`;
+
+    // labels
+    const yc = yTop + BAND_H/2;
+    svg += `<text class="stage-name" x="${CX}" y="${yc-14}" text-anchor="middle" fill="${txtCol}" opacity="0.85">${STAGE_NAMES[i]}</text>`;
+    svg += `<text class="stage-count" x="${CX}" y="${yc+10}" text-anchor="middle" fill="${txtCol}">${fmtCount(counts[i])}</text>`;
+
+    // drop pill
+    if (i>0){
+      const pc = dropPillColor(side,i);
+      const label = `${Math.round(rates[i]*100)}% ${dropLabel(i)}`;
+      const pillW = label.length*6.0 + 16;
+      const px = CX - pillW/2, py = yc+18;
+      svg += `<rect x="${px}" y="${py}" width="${pillW}" height="18" rx="9" fill="${pc}" opacity="0.92"/>`;
+      svg += `<text class="drop-pill-text" x="${CX}" y="${py+13}" text-anchor="middle">${label}</text>`;
+    }
+  }
+  svgEl.innerHTML = svg;
+}
+function dropLabel(i){
+  return ['','sign-up rate','habit rate','reach rate','close rate'][i];
+}
+
+//=================== Delta badges ===================
+function renderDeltas(beforeCounts, afterCounts){
+  const list = $('delta-list');
+  let html = '';
+  for (let i=0;i<5;i++){
+    const b = beforeCounts[i], a = afterCounts[i];
+    const absDiff = a - b;
+    const relDiff = b>0 ? (absDiff/b)*100 : 0;
+    const up = absDiff >= 0;
+    const cls = up ? 'up' : 'down';
+    const sign = up ? '+' : '';
+    const relTxt = `${sign}${Math.round(relDiff)}%`;
+    const absTxt = `${sign}${fmtCount(Math.abs(absDiff)).replace('M','m')} ${up?'':'fewer '}users`;
+    const marginTop = (i===0)? 6 : (BAND_H+GAP-46);
+    html += `<div class="delta ${cls}" style="margin-top:${marginTop}px">${relTxt}<span class="abs">${absTxt}</span></div>`;
+  }
+  list.innerHTML = html;
+}
+
+//=================== Main render ===================
+function render(){
+  const s = readSliders();
+
+  // update slider value labels
+  $('v-signup').textContent = s.signup+'%';
+  $('v-habit').textContent  = s.habit+'%';
+  $('v-action').textContent = s.action+'%';
+  $('v-close').textContent  = s.close+'%';
+  $('v-arpu').textContent   = '$'+s.arpu;
+  $('v-cannib').textContent = '$'+s.cannib+'M';
+  $('v-cogs').textContent   = '$'+s.cogs+'M';
+  $('v-support').textContent= '$'+s.support+'M';
+  $('v-dilution').textContent='$'+s.dilution+'M';
+  $('v-churn').textContent  = '$'+s.churn+'M';
+
+  // after chain
+  const after = {};
+  after.mau = MAU;
+  after.signedin = after.mau * (s.signup/100);
+  after.habit    = after.signedin * (s.habit/100);
+  after.action   = after.habit * (s.action/100);
+  after.paid     = after.action * (s.close/100);
+  after.conv     = after.paid / after.mau;
+
+  // financials
+  const incremental_paid = after.paid - before.paid;
+  const gross_arr = (incremental_paid * s.arpu) / 1e6; // $M
+  const net_arr = gross_arr - s.cannib - s.cogs - s.support - s.dilution - s.churn;
+  const conv_delta_bps = (after.conv - before.conv) * 10000;
+  const dc_after = 3900 + net_arr;
+
+  // funnels
+  const beforeCounts = [before.mau, before.signedin, before.habit, before.action, before.paid];
+  const afterCounts  = [after.mau, after.signedin, after.habit, after.action, after.paid];
+  const beforeRates  = [1, BEFORE.signup, BEFORE.habit, BEFORE.action, BEFORE.close];
+  const afterRates   = [1, s.signup/100, s.habit/100, s.action/100, s.close/100];
+
+  drawFunnel($('svg-before'), beforeCounts, beforeRates, 'before');
+  drawFunnel($('svg-after'),  afterCounts,  afterRates,  'after');
+  renderDeltas(beforeCounts, afterCounts);
+
+  // summaries
+  $('sum-before').innerHTML = `<b>${pct(before.conv)}</b> blended conversion &middot; <b>${fmtCount(before.paid)}</b> paid users`;
+  $('sum-after').innerHTML  = `<b>${pct(after.conv)}</b> blended conversion &middot; <b>${fmtCount(after.paid)}</b> paid users`;
+
+  // banner
+  animateARR(net_arr);
+  $('dc-after').textContent = '$'+(dc_after/1000).toFixed(2)+'B';
+  $('gross-arr').textContent = dollarsM(gross_arr);
+  $('conv-pill').textContent = `${pct(before.conv)} → ${pct(after.conv)} (${conv_delta_bps>=0?'+':''}${Math.round(conv_delta_bps)} bps)`;
+
+  // verdict
+  const verdict = $('verdict');
+  verdict.className = 'verdict';
+  if (net_arr > 200){ verdict.classList.add('v-green'); verdict.textContent = 'STRONGLY POSITIVE'; }
+  else if (net_arr >= 0){ verdict.classList.add('v-amber'); verdict.textContent = 'MARGINALLY POSITIVE'; }
+  else { verdict.classList.add('v-red'); verdict.textContent = 'NET NEGATIVE — STRATEGY FAILS'; }
+
+  // margin bar (net as % of gross)
+  const bar = $('margin-bar');
+  let marginPct = gross_arr>0 ? (net_arr/gross_arr)*100 : 0;
+  const clamped = Math.max(0, Math.min(100, marginPct));
+  bar.style.width = clamped+'%';
+  let barColor = marginPct>70 ? 'var(--green)' : (marginPct>=50 ? 'var(--amber)' : 'var(--red)');
+  bar.style.background = barColor;
+  $('margin-cap').textContent = `Net ARR is ${Math.round(marginPct)}% of gross ARR` + (gross_arr<=0 ? ' (no incremental gross ARR)' : '');
+
+  // warning
+  $('warn').classList.toggle('show', incremental_paid < 0);
+
+  // calc readout
+  const items = [
+    ['After signed-in', fmtCount(after.signedin)],
+    ['After habit-formed', fmtCount(after.habit)],
+    ['After action reach', fmtCount(after.action)],
+    ['After paid', fmtCount(after.paid)],
+    ['Incremental paid', (incremental_paid>=0?'+':'')+fmtCount(incremental_paid), incremental_paid<0],
+    ['Gross ARR', dollarsM(gross_arr)],
+    ['Total cost deductions', dollarsM(s.cannib+s.cogs+s.support+s.dilution+s.churn)],
+    ['Net new ARR', dollarsM(net_arr), net_arr<0]
+  ];
+  $('calc-grid').innerHTML = items.map(it=>
+    `<div class="calc-item${it[2]?' neg':''}"><div class="k">${it[0]}</div><div class="v">${it[1]}</div></div>`
+  ).join('');
+}
+
+//=================== Wiring ===================
+sliderIds.forEach(id=>{
+  $('s-'+id).addEventListener('input', render);
+});
+
+// reset
+$('reset-btn').addEventListener('click', ()=>{
+  for (const k in DEFAULTS){ $('s-'+k).value = DEFAULTS[k]; }
+  render();
+  const btn = $('reset-btn');
+  btn.classList.add('flash');
+  btn.innerHTML = '&#10003; Reset';
+  setTimeout(()=>{ btn.classList.remove('flash'); btn.innerHTML='&#8634; Reset to Deck Defaults'; }, 1500);
+});
+
+// tabs
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    $('tab-'+b.dataset.tab).classList.add('active');
+  });
+});
+
+// initial paint
+arrAnim.cur = 0;
+render();
+</script>
+</body>
+</html>
