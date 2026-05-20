@@ -1,1 +1,1 @@
-# acrobat-freemium
+# Freemium Strategy for Adobe Acrobat
